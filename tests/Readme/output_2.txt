@@ -1,0 +1,16 @@
+array(7) {
+  ["SUNDAY"]=>
+  int(0)
+  ["MONDAY"]=>
+  int(1)
+  ["TUESDAY"]=>
+  int(2)
+  ["WEDNESDAY"]=>
+  int(3)
+  ["THURSDAY"]=>
+  int(4)
+  ["FRIDAY"]=>
+  int(5)
+  ["SATURDAY"]=>
+  int(6)
+}
