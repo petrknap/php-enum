@@ -1,63 +1,54 @@
 <?php
 
-namespace PetrKnap\Php\Enum\Test;
+namespace PetrKnap\Enum\Test;
 
-use PetrKnap\Php\Enum\Enum;
-use PetrKnap\Php\Enum\Exception\EnumNotFoundException;
-use PetrKnap\Php\Enum\Test\EnumTest\MixedValues;
-use PetrKnap\Php\Enum\Test\EnumTest\MyBoolean;
+use PetrKnap\Enum\Enum;
+use PetrKnap\Enum\MemberNotFoundException;
+use PetrKnap\Enum\ValueNotFoundException;
+use PetrKnap\Enum\Test\Readme\MyBoolean;
+use PHPUnit\Framework\TestCase;
 
-class EnumTest extends \PHPUnit_Framework_TestCase
+class EnumTest extends TestCase
 {
-    /**
-     * @dataProvider dataCallStaticsWorks
-     * @param string $name
-     * @param mixed $expectedValue
-     * @param string $expectedException
-     */
-    public function testCallStaticsWorks($name, $expectedValue, $expectedException = null)
+    /** @dataProvider dataCallStaticWorks */
+    public function testCallStaticWorks(string $name, mixed $expectedValue, string $expectedException = null)
     {
         if ($expectedException) {
-            $this->setExpectedException($expectedException);
+            $this->expectException($expectedException);
         }
 
         $this->assertSame($expectedValue, MyBoolean::__callStatic($name, [])->getValue());
     }
 
-    public function dataCallStaticsWorks()
+    public function dataCallStaticWorks()
     {
         return [
             ["MY_TRUE", 1],
             ["MY_FALSE", 2],
-            ["MY_NULL", null, EnumNotFoundException::class],
+            ["MY_NULL", null, MemberNotFoundException::class],
         ];
     }
 
-    /**
-     * @dataProvider dataGetEnumByValueWorks
-     * @param mixed $value
-     * @param Enum $expectedEnum
-     * @param string $expectedException
-     */
-    public function testGetEnumByValueWorks($value, $expectedEnum, $expectedException = null)
+    /** @dataProvider dataGetByValueWorks */
+    public function testGetByValueWorks(mixed $value, ?Enum $expectedEnum, string $expectedException = null)
     {
         if ($expectedException) {
-            $this->setExpectedException($expectedException);
+            $this->expectException($expectedException);
         }
 
-        $this->assertSame($expectedEnum, MyBoolean::getEnumByValue($value));
+        $this->assertSame($expectedEnum, MyBoolean::getByValue($value));
     }
 
-    public function dataGetEnumByValueWorks()
+    public function dataGetByValueWorks()
     {
         return [
             [1, MyBoolean::MY_TRUE()],
             [2, MyBoolean::MY_FALSE()],
-            [3, null, EnumNotFoundException::class],
+            [3, null, ValueNotFoundException::class],
         ];
     }
 
-    public function testComparableWorks()
+    public function testComparisionWorks()
     {
         $this->assertTrue(MyBoolean::MY_TRUE() == MyBoolean::MY_TRUE());
         $this->assertFalse(MyBoolean::MY_TRUE() == MyBoolean::MY_FALSE());
@@ -77,12 +68,8 @@ class EnumTest extends \PHPUnit_Framework_TestCase
         ], MyBoolean::getMembers());
     }
 
-    /**
-     * @dataProvider dataToStringWorks
-     * @param Enum $enum
-     * @param string $expectedString
-     */
-    public function testToStringWorks(Enum $enum, $expectedString)
+    /** @dataProvider dataToStringWorks */
+    public function testToStringWorks(Enum $enum, string $expectedString)
     {
         $this->assertSame($expectedString, $enum->__toString());
         $this->assertSame($expectedString, (string) $enum);
@@ -93,27 +80,42 @@ class EnumTest extends \PHPUnit_Framework_TestCase
     public function dataToStringWorks()
     {
         return [
-            [MyBoolean::MY_TRUE(), MyBoolean::getClass() . "::MY_TRUE"],
-            [MyBoolean::MY_FALSE(), MyBoolean::getClass() . "::MY_FALSE"]
+            [MyBoolean::MY_TRUE(), MyBoolean::class . "::MY_TRUE"],
+            [MyBoolean::MY_FALSE(), MyBoolean::class . "::MY_FALSE"]
         ];
     }
 
-    /**
-     * @dataProvider dataMixedValuesAreSupported
-     * @param MixedValues $enum
-     * @param string $expectedDataType
-     */
-    public function testMixedValuesAreSupported(MixedValues $enum, $expectedDataType)
+    /** @dataProvider dataMixedValuesAreSupported */
+    public function testMixedValuesAreSupported(Enum $enum, string $assertion)
     {
-        $this->assertInternalType($expectedDataType, $enum->getValue());
+        $this->{"assert{$assertion}"}($enum->getValue());
     }
 
     public function dataMixedValuesAreSupported()
     {
-        $data = [];
-        foreach (MixedValues::getMembers() as $name => $ignored) {
-            $data[] = [MixedValues::__callStatic($name, []), $name];
+        $mixed = new class ('test', 'test') extends Enum {
+            public function __construct(...$args)
+            {
+                parent::__construct(...$args);
+            }
+
+            public static function getMembers(): array
+            {
+                return [
+                    "Null" => null,
+                    "IsBool" => true,
+                    "IsInt" => 1,
+                    "IsFloat" => 1.0,
+                    "IsString" => "s",
+                    "IsArray" => [],
+                    "IsObject" => new \stdClass(),
+                    "IsCallable" => function () {
+                    },
+                ];
+            }
+        };
+        foreach ($mixed::getMembers() as $name => $ignored) {
+            yield [$mixed::__callStatic($name, []), $name];
         }
-        return $data;
     }
 }

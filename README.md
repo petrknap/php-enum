@@ -20,15 +20,9 @@
 Because **it is safer and less scary** than using constants. Don't trust me? Let see at this code:
 
 ```php
-<?php
+use PetrKnap\Enum\Test\Readme\MyBoolean;
 
-class MyBoolean
-{
-    const MY_TRUE = 1;
-    const MY_FALSE = 2;
-}
-
-function isTrue($myBoolean)
+$isTrue = function (int $myBoolean)
 {
     switch($myBoolean) {
         case MyBoolean::MY_TRUE:
@@ -36,30 +30,23 @@ function isTrue($myBoolean)
         case MyBoolean::MY_FALSE:
             return false;
     }
-}
+};
 
-isTrue(MyBoolean::MY_TRUE);  // returns true - OK
-isTrue(MyBoolean::MY_FALSE); // returns false - OK
-isTrue(1);                   // returns true - OK
-isTrue(2);                   // returns false - scary, but OK
-isTrue(true);                // returns true - OK
-isTrue(false);               // returns null - WTF?
+var_dump($isTrue(MyBoolean::MY_TRUE));  // true - correct
+var_dump($isTrue(MyBoolean::MY_FALSE)); // false - correct
+var_dump($isTrue(0));                   // none
+var_dump($isTrue(1));                   // true - expected
+var_dump($isTrue(2));                   // false
+var_dump($isTrue((int) true));          // true - expected
+var_dump($isTrue((int) false));         // none
 ```
 
-And now the **same code with Enum** instead of Constants:
+And now the **same code [with enum](./tests/Readme/MyBoolean.php)** instead of constants:
 
 ```php
-<?php
+use PetrKnap\Enum\Test\Readme\MyBoolean;
 
-class MyBoolean extends \PetrKnap\Php\Enum\Enum
-{
-    use \PetrKnap\Php\Enum\ConstantsAsMembers;
-
-    const MY_TRUE = 1;
-    const MY_FALSE = 2;
-}
-
-function isTrue(MyBoolean $myBoolean)
+$isTrue = function (MyBoolean $myBoolean): bool
 {
     switch($myBoolean) {
         case MyBoolean::MY_TRUE():
@@ -67,26 +54,24 @@ function isTrue(MyBoolean $myBoolean)
         case MyBoolean::MY_FALSE():
             return false;
     }
-}
+};
 
-isTrue(MyBoolean::MY_TRUE());  // returns true - OK
-isTrue(MyBoolean::MY_FALSE()); // returns false - OK
-isTrue(1);                     // uncaught type error - OK
-isTrue(2);                     // uncaught type error - OK
-isTrue(true);                  // uncaught type error - OK
-isTrue(false);                 // uncaught type error - OK
+var_dump($isTrue(MyBoolean::MY_TRUE()));  // true - correct
+var_dump($isTrue(MyBoolean::MY_FALSE())); // false - correct
 ```
 
 
-## Usage of php-enum
+## Usage of enum
 
 ### Enum declaration
-```php
-<?php
 
-class DayOfWeek extends \PetrKnap\Php\Enum\Enum
+```php
+use PetrKnap\Enum\Enum;
+use PetrKnap\Enum\ConstantsAsMembersTrait;
+
+class DayOfWeek extends Enum
 {
-    use \PetrKnap\Php\Enum\ConstantsAsMembers;
+    use ConstantsAsMembersTrait;
 
     const SUNDAY = 0;
     const MONDAY = 1;
@@ -96,21 +81,25 @@ class DayOfWeek extends \PetrKnap\Php\Enum\Enum
     const FRIDAY = 5;
     const SATURDAY = 6;
 }
+
+var_dump(DayOfWeek::getMembers());
 ```
 
-### Enum usage
-```php
-<?php
 
+### Enum usage
+
+```php
 if (DayOfWeek::FRIDAY() == DayOfWeek::FRIDAY()) {
-    echo "This is OK.";
+    echo 'This is OK.' . PHP_EOL;
 }
 
 if (DayOfWeek::FRIDAY() == DayOfWeek::MONDAY()) {
-    echo "We are going to Hell!";
+    echo 'We are going to Hell!' . PHP_EOL;
 }
+```
 
-function isWeekend(DayOfWeek $dayOfWeek)
+```php
+$isWeekend = function (DayOfWeek $dayOfWeek): bool
 {
    switch ($dayOfWeek) {
        case DayOfWeek::SATURDAY():
@@ -119,14 +108,20 @@ function isWeekend(DayOfWeek $dayOfWeek)
        default:
            return false;
    }
-}
+};
 
-if (date('w') == DayOfWeek::FRIDAY()->getValue()) {
-    echo "Finally it is Friday!";
+var_dump($isWeekend(DayOfWeek::FRIDAY()));   // false
+var_dump($isWeekend(DayOfWeek::SATURDAY())); // true
+```
+
+```php
+$dayOfWeek = (int) date('w', 1697220074);
+if ($dayOfWeek === DayOfWeek::FRIDAY()->getValue()) {
+    echo 'Finally it is Friday!' . PHP_EOL;
 }
 // or
-if (DayOfWeek::getEnumByValue(date('w')) == DayOfWeek::FRIDAY()) {
-    echo "Finally it is Friday!";
+if (DayOfWeek::getByValue($dayOfWeek) == DayOfWeek::FRIDAY()) {
+    echo 'Finally it is Friday!' . PHP_EOL;
 }
 ```
 
@@ -135,11 +130,11 @@ if (DayOfWeek::getEnumByValue(date('w')) == DayOfWeek::FRIDAY()) {
 Enum is capable to carry any data type as values, including another enum instance.
 
 ```php
-<?php
+use PetrKnap\Enum\Enum;
 
-class MixedValues extends \PetrKnap\Php\Enum\Enum
+class MixedValues extends Enum
 {
-    protected function members()
+    public static function getMembers(): array
     {
         return [
             "null" => null,
@@ -149,67 +144,47 @@ class MixedValues extends \PetrKnap\Php\Enum\Enum
             "string" => "s",
             "array" => [],
             "object" => new \stdClass(),
-            "callable" => function() {}
+            "callable" => function(string $name): void {
+                echo "Hello {$name}!" . PHP_EOL;
+            },
         ];
     }
 }
+
+MixedValues::callable()->getValue()('World');
 ```
 
-You can simply convert value to Enum instance and vice versa.
+You can simply convert value to member instance and vice versa.
 
 ```php
-<?php
-
-/**
- * @ORM\Entity
- */
+#[ORM\Entity]
 class MyEntity
 {
-    /**
-     * @ORM\Column(type="integer")
-     * @var int
-     */
-    private $dayOfWeek;
+    #[ORM\Column(type: 'integer')]
+    private int $dayOfWeek;
 
-    /**
-     * @return DayOfWeek
-     */
-    public function getDayOfWeek()
+    public function getDayOfWeek(): DayOfWeek
     {
-        return DayOfWeek::getEnumByValue($this->dayOfWeek);
+        return DayOfWeek::getByValue($this->dayOfWeek);
     }
 
-    /**
-     * @param DayOfWeek $dayOfWeek
-     */
-    public function setDayOfWeek(DayOfWeek $dayOfWeek)
+    public function setDayOfWeek(DayOfWeek $dayOfWeek): void
     {
         $this->dayOfWeek = $dayOfWeek->getValue();
     }
 }
+
+$myEntity = new MyEntity();
+$myEntity->setDayOfWeek(DayOfWeek::MONDAY());
+echo "It was {$myEntity->getDayOfWeek()}." . PHP_EOL;
 ```
-
-
-## How to install
-
-Run `composer require petrknap/php-enum` or merge this JSON code with your project `composer.json` file manually and run `composer install`. Instead of `dev-master` you can use [one of released versions].
-
-```json
-{
-    "require": {
-        "petrknap/php-enum": "dev-master"
-    }
-}
-```
-
-Or manually clone this repository via `git clone https://github.com/petrknap/php-enum.git` or download [this repository as ZIP] and extract files into your project.
-
-
-
-[one of released versions]:https://github.com/petrknap/php-enum/releases
-[this repository as ZIP]:https://github.com/petrknap/php-enum/archive/master.zip
-
 
 
 
 [Enumerated type - Wikipedia, The Free Encyclopedia]:https://en.wikipedia.org/w/index.php?title=Enumerated_type&oldid=701057934
+
+---
+
+Run `composer require petrknap/enum` to install it.
+You can [support this project via donation](https://petrknap.github.io/donate.html).
+The project is licensed under [the terms of the `LGPL-3.0-or-later`](./COPYING.LESSER).

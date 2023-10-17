@@ -1,181 +1,73 @@
-<?php
+<?php declare(strict_types=1);
 
-namespace PetrKnap\Php\Enum;
+namespace PetrKnap\Enum;
 
-use PetrKnap\Php\Enum\Exception\EnumNotFoundException;
+use Stringable;
+use function PetrKnap\Shorts\array_key_map;
 
-/**
- * Abstract enum object
- *
- * @author  Petr Knap <dev@petrknap.cz>
- * @since   2016-01-23
- * @package PetrKnap\Php\Enum
- * @license https://github.com/petrknap/php-enum/blob/master/LICENSE MIT
- */
-abstract class Enum implements EnumInterface
+/** @phpstan-consistent-constructor */
+abstract class Enum implements MemberInterface, Stringable
 {
-    /**
-     * @var self[][]
-     */
-    private static $instances;
+    /** @var array<string, static> */
+    protected static ?array $instances = null;
 
-    /**
-     * @var mixed[][]
-     */
-    private static $members = [];
-
-    /**
-     * @var string
-     */
-    private $memberName;
-
-    /**
-     * @var mixed
-     */
-    private $memberValue;
-
-    /**
-     * @param string $memberName
-     */
-    protected function __construct($memberName)
-    {
-        $members = &self::$members[static::class];
-
-        if (!$members) {
-            $members = $this->members();
-        }
-
-        if (!($memberName === null && !$this->exists(null))) {
-            $this->memberName = $memberName;
-            $this->memberValue = $this->get($memberName);
-        }
+    protected function __construct(
+        private string $name,
+        private mixed $value
+    ) {
     }
 
-    /**
-     * Creates magical factories for easier access to enum
-     *
-     * @param string $memberName enum key
-     * @param array $args ignored
-     * @return static
-     */
-    public static function __callStatic($memberName, array $args)
+    public function getName(): string
     {
-        $className = static::class;
-
-        $instances = &self::$instances[$className];
-
-        if (!is_array($instances)) {
-            $instances = [];
-        }
-
-        $instance = &$instances[$memberName];
-
-        if (!($instance instanceof $className)) {
-            $instance = new $className($memberName);
-        }
-
-        return $instance;
+        return $this->name;
     }
 
-    /**
-     * @inheritdoc
-     */
-    public function getName()
+    public function getValue(): mixed
     {
-        return $this->memberName;
+        return $this->value;
     }
 
-    /**
-     * @inheritdoc
-     */
-    public function getValue()
+    /** @return array<string, mixed> */
+    abstract public static function getMembers(): array;
+
+    /** @throws MemberNotFoundException */
+    public static function getByName(string $name): static
     {
-        return $this->memberValue;
+        static::$instances = array_key_map(function ($instance) use ($name) {
+            return $instance ?? new static($name, static::getMemberValue($name));
+        }, static::$instances ?? [], $name);
+        return static::$instances[$name];
     }
 
-    /**
-     * Generates and returns members of enum as associative array (keys are names and values are values)
-     *
-     * NOTE: Can not be merged with static {@link getMembers()} due to its abstraction.
-     *
-     * @return mixed[] [first_name => first_value, second_name => second_value,...]
-     */
-    abstract protected function members();
-
-    /**
-     * Returns members of enum
-     *
-     * NOTE: Can not be merged with non-static {@link members()} due to its inner logic
-     *
-     * @return mixed[] [first_name => first_value, second_name => second_value,...]
-     */
-    public static function getMembers()
+    /** @throws ValueNotFoundException */
+    public static function getByValue(mixed $value): static
     {
-        $className = static::class;
-
-        $members = &self::$members[$className];
-
-        if (empty($members)) {
-            new $className(null);
-        }
-
-        return $members;
-    }
-
-    /**
-     * @param string $memberName
-     * @return bool
-     */
-    private function exists($memberName)
-    {
-        return array_key_exists($memberName, self::$members[static::class]);
-    }
-
-    /**
-     * @param string $memberName
-     * @return mixed
-     * @throws EnumNotFoundException
-     */
-    private function get($memberName)
-    {
-        if (!$this->exists($memberName)) {
-            throw new EnumNotFoundException(
-                sprintf(
-                    "%s does not exist in %s",
-                    $memberName,
-                    static::class
-                )
-            );
-        }
-
-        return self::$members[static::class][$memberName];
-    }
-
-    /**
-     * @param mixed $value
-     * @return static
-     * @throws EnumNotFoundException
-     */
-    public static function getEnumByValue($value)
-    {
-        foreach (self::getMembers() as $n => $v) {
+        foreach (static::getMembers() as $n => $v) {
             if ($value === $v) {
-                return self::__callStatic($n, []);
+                return static::getByName($n);
             }
         }
-        throw new EnumNotFoundException(
-            sprintf(
-                "Value not found in %s",
-                static::class
-            )
-        );
+        throw new ValueNotFoundException(static::class, $value);
     }
 
-    /**
-     * @return string
-     */
-    public function __toString()
+    /** @throws MemberNotFoundException */
+    protected static function getMemberValue(string $name): mixed
     {
-        return sprintf("%s::%s", static::class, $this->getName());
+        $members = static::getMembers();
+        if (!array_key_exists($name, $members)) {
+            throw new MemberNotFoundException(static::class, $name);
+        }
+        return $members[$name];
+    }
+
+    /** @param array<mixed> $unused */
+    public static function __callStatic(string $name, array $unused): static
+    {
+        return static::getByName($name);
+    }
+
+    public function __toString(): string
+    {
+        return sprintf('%s::%s', static::class, $this->getName());
     }
 }
