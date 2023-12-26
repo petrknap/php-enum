@@ -1,6 +1,6 @@
 <?php
 
-namespace PetrKnap\Enum\Test;
+namespace PetrKnap\Enum;
 
 use PetrKnap\Enum\ConstantsAsMembersTrait;
 use PHPUnit\Framework\TestCase;

@@ -20,7 +20,7 @@
 Because **it is safer and less scary** than using constants. Don't trust me? Let see at this code:
 
 ```php
-use PetrKnap\Enum\Test\Readme\MyBoolean;
+use PetrKnap\Enum\Readme\MyBoolean;
 
 $isTrue = function (int $myBoolean)
 {
@@ -44,7 +44,7 @@ var_dump($isTrue((int) false));         // none
 And now the **same code [with enum](./tests/Readme/MyBoolean.php)** instead of constants:
 
 ```php
-use PetrKnap\Enum\Test\Readme\MyBoolean;
+use PetrKnap\Enum\Readme\MyBoolean;
 
 $isTrue = function (MyBoolean $myBoolean): bool
 {

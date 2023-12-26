@@ -2,8 +2,8 @@
 
 namespace PetrKnap\Enum;
 
+use PetrKnap\Shorts\ArrayShorts;
 use Stringable;
-use function PetrKnap\Shorts\array_key_map;
 
 /** @phpstan-consistent-constructor */
 abstract class Enum implements MemberInterface, Stringable
@@ -33,10 +33,12 @@ abstract class Enum implements MemberInterface, Stringable
     /** @throws MemberNotFoundException */
     public static function getByName(string $name): static
     {
-        static::$instances = array_key_map(function ($instance) use ($name) {
-            return $instance ?? new static($name, static::getMemberValue($name));
-        }, static::$instances ?? [], $name);
-        return static::$instances[$name];
+        static::$instances = ArrayShorts::keyMap( // @phpstan-ignore-line
+            static fn ($instance) => $instance ?? new static($name, static::getMemberValue($name)),
+            static::$instances ?? [],
+            $name,
+        );
+        return static::$instances[$name]; // @phpstan-ignore-line
     }
 
     /** @throws ValueNotFoundException */

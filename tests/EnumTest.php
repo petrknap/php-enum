@@ -1,11 +1,11 @@
 <?php
 
-namespace PetrKnap\Enum\Test;
+namespace PetrKnap\Enum;
 
 use PetrKnap\Enum\Enum;
 use PetrKnap\Enum\MemberNotFoundException;
 use PetrKnap\Enum\ValueNotFoundException;
-use PetrKnap\Enum\Test\Readme\MyBoolean;
+use PetrKnap\Enum\Readme\MyBoolean;
 use PHPUnit\Framework\TestCase;
 
 class EnumTest extends TestCase

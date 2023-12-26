@@ -1,6 +1,6 @@
 <?php
 
-namespace PetrKnap\Enum\Test\Readme;
+namespace PetrKnap\Enum\Readme;
 
 use PetrKnap\Enum\Enum;
 use PetrKnap\Enum\ConstantsAsMembersTrait;
