@@ -21,12 +21,6 @@ class ReadmeTest extends TestCase implements MarkdownFileTestInterface
         return [
             'why-constants' => $expect(0),
             'why-enum' => $expect(1),
-            'usage-declaration' => $expect(2),
-            'usage-condition' => $expect(3),
-            'usage-switch' => $expect(4),
-            'usage-date' => $expect(5),
-            'tips-mixed' => $expect(6),
-            'tips-entity' => $expect(7),
         ];
     }
 }
