@@ -1,28 +1,32 @@
 <?php declare(strict_types=1);
 
-namespace PetrKnap\Enum\Test;
+namespace PetrKnap\Enum;
 
+use PetrKnap\Shorts\PhpUnit\MarkdownFileTestInterface;
+use PetrKnap\Shorts\PhpUnit\MarkdownFileTestTrait;
 use PHPUnit\Framework\TestCase;
-use function PetrKnap\Shorts\md_evaluate_example;
-use function PetrKnap\Shorts\md_extract_examples;
 
-class ReadmeTest extends TestCase
+class ReadmeTest extends TestCase implements MarkdownFileTestInterface
 {
-    /** @dataProvider dataExampleWorks */
-    public function testExampleWorks(string $example, int $index)
+    use MarkdownFileTestTrait;
+
+    public static function getPathToMarkdownFile(): string
     {
-        $this->assertEquals(
-            file_get_contents(__DIR__ . "/Readme/output_{$index}.txt"),
-            md_evaluate_example($example)
-        );
+        return __DIR__ . '/../README.md';
     }
 
-    public function dataExampleWorks()
+    public static function getExpectedOutputsOfPhpExamples(): iterable
     {
-        $i = 0;
-        foreach (md_extract_examples(__DIR__ . '/../README.md') as $example) {
-            yield $i => [$example, $i];
-            $i++;
-        }
+        $expect = static fn(int $i): string => file_get_contents(__DIR__ . "/Readme/output_{$i}.txt");
+        return [
+            'why-constants' => $expect(0),
+            'why-enum' => $expect(1),
+            'usage-declaration' => $expect(2),
+            'usage-condition' => $expect(3),
+            'usage-switch' => $expect(4),
+            'usage-date' => $expect(5),
+            'tips-mixed' => $expect(6),
+            'tips-entity' => $expect(7),
+        ];
     }
 }
